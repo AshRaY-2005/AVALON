@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVALON — Start Project</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <nav class="sidebar">
+        <div class="brand">
+            <span>AVALON</span>
+        </div>
+        <a href="#" class="nav-item active">New Project</a>
+        <a href="#" class="nav-item">Template Library</a>
+        <a href="#" class="nav-item">Settings</a>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div>
+                <h1>Project Configuration</h1>
+                <p style="color: var(--text-muted)">Define parameters for intelligent analysis</p>
+            </div>
+        </header>
+
+        {% if result and result.error %}
+        <div class="card" style="border-color: var(--accent-red); background: rgba(239, 68, 68, 0.1);">
+            <div style="color: var(--accent-red); font-weight: bold;">⚠️ {{ result.error }}</div>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/">
+            <div class="dashboard-grid">
+
+                <!-- CORE DETAILS -->
+                <div class="card">
+                    <h2>Core Details</h2>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input name="location" type="text" placeholder="e.g. Mumbai, Pune, Hyderabad" required>
+                    </div>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Plot Area (sq yd)</label>
+                            <input name="area" type="number" placeholder="200" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Floors</label>
+                            <input name="floors" type="number" placeholder="2" required>
+                        </div>
+                    </div>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Budget Range (₹)</label>
+                            <input name="budget" type="number" placeholder="5000000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Project Start Date</label>
+                            <input name="start_date" type="date" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SITE CONDITIONS -->
+                <div class="card">
+                    <h2>Site Conditions</h2>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Soil Type</label>
+                            <select name="soil_type" class="input-select" required>
+                                <option value="Rocky">Rocky</option>
+                                <option value="Clay" selected>Clay</option>
+                                <option value="Sandy">Sandy</option>
+                                <option value="Black Cotton">Black Cotton</option>
+                                <option value="Alluvial">Alluvial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Site Accessibility</label>
+                            <select name="site_access" class="input-select">
+                                <option value="Easy" selected>Easy (Main Road)</option>
+                                <option value="Moderate">Moderate (Internal Road)</option>
+                                <option value="Difficult">Difficult (Narrow Lane)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RESOURCES -->
+                <div class="card">
+                    <h2>Resources & Materials</h2>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Material Grade</label>
+                            <select name="material_grade" class="input-select" required>
+                                <option value="Economy">Economy (Basic)</option>
+                                <option value="Standard" selected>Standard (IS Certified)</option>
+                                <option value="Premium">Premium (High Grade)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Machinery Availability</label>
+                            <select name="machinery" class="input-select" required>
+                                <option value="Manual">Manual (Labor Intensive)</option>
+                                <option value="Partial" selected>Partial (Basic Equipment)</option>
+                                <option value="Full">Full (Crane, Mixer, JCB)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Workforce Size (Total Workers)</label>
+                        <input name="workforce_size" type="number" placeholder="20" min="5" max="100" value="20"
+                            required>
+                    </div>
+                </div>
+
+                <!-- SPACE & LAYOUT -->
+                <div class="card">
+                    <h2>Space & Layout</h2>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Plot Shape</label>
+                            <select name="plot_shape" class="input-select">
+                                <option value="Rectangular">Rectangular</option>
+                                <option value="Square">Square</option>
+                                <option value="Irregular">Irregular</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Bedrooms / Floor</label>
+                            <input name="bedrooms" type="number" value="2" min="1" max="5">
+                        </div>
+                    </div>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Kitchen Type</label>
+                            <select name="kitchen_type" class="input-select">
+                                <option value="Closed">Closed</option>
+                                <option value="Open">Open Concept</option>
+                                <option value="Island">Island Kitchen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Occupancy</label>
+                            <select name="occupancy" class="input-select">
+                                <option value="Nuclear Family">Nuclear Family</option>
+                                <option value="Joint Family">Joint Family</option>
+                                <option value="Bachelor/Rental">Bachelor / Rental</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ACCESS & LIFESTYLE -->
+                <div class="card">
+                    <h2>Access & Lifestyle</h2>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label>Staircase Position</label>
+                            <select name="staircase" class="input-select">
+                                <option value="Internal">Internal (Duplex)</option>
+                                <option value="External">External (Separate Units)</option>
+                                <option value="Central Core">Central Core</option>
+                            </select>
+                        </div>
+                        <!-- Space for future inputs -->
+                    </div>
+                </div>
+
+                <!-- COST & PRIORITIES -->
+                <div class="card">
+                    <h2>Quality & Priority</h2>
+                    <div class="form-group">
+                        <label>Construction Quality</label>
+                        <select name="quality" class="input-select" style="border-color: var(--primary);">
+                            <option value="Economy">Economy (Basic Finishes)</option>
+                            <option value="Standard" selected>Standard (Market Spec)</option>
+                            <option value="Premium">Premium (High-End)</option>
+                            <option value="Luxury">Luxury (Top Tier)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Primary Constraint</label>
+                        <select name="priority" class="input-select">
+                            <option value="Balanced">Balanced (Cost & Time)</option>
+                            <option value="Speed">Speed (Fast Track / Higher Cost)</option>
+                            <option value="Cost">Cost (Budget Optimization)</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn-primary" style="width: 300px; font-size: 1.2rem;">
+                    Generate Analysis
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <!-- Custom select styles are now in style.css -->
+</body>
+
+</html>
