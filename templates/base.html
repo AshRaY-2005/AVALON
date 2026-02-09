@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AVALON — AI Construction Planning{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="brand">
+            <span>AVALON</span>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">ANALYSIS</div>
+            <a href="/" class="nav-item {% if active_page == 'index' %}active{% endif %}">New Project</a>
+            <a href="/dashboard" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">SIMULATION</div>
+            <a href="/whatif" class="nav-item {% if active_page == 'whatif' %}active{% endif %}">What-If Simulator</a>
+            <a href="/risks" class="nav-item {% if active_page == 'risks' %}active{% endif %}">Risk Intelligence</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">INSIGHTS</div>
+            <a href="/analytics" class="nav-item {% if active_page == 'analytics' %}active{% endif %}">Visual
+                Analytics</a>
+        </div>
+
+        <div class="nav-section" style="margin-top: auto;">
+            <div class="nav-label">ACCOUNT</div>
+            <a href="/logout" class="nav-item" style="color: var(--accent-red);">Logout</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

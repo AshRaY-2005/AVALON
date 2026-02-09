@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% set active_page = 'analytics' %}
+
+{% block title %}AVALON — Visual Analytics Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="header">
+    <div>
+        <h1>Visual Analytics</h1>
+        <p style="color: var(--text-muted)">Advanced project intelligence and multi-dimensional performance tracking
+        </p>
+    </div>
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div class="budget-badge"
+            style="background: rgba(16, 185, 129, 0.1); border-color: var(--accent-green); color: #166534;">
+            ESG Score: {{ analytics.kpis.sustainability_score }}
+        </div>
+        <div class="budget-badge">
+            Efficiency: {{ analytics.kpis.efficiency_ratio }}%
+        </div>
+    </div>
+</header>
+
+<!-- STRATEGIC AI INSIGHT PANEL (New) -->
+<div class="card"
+    style="margin-bottom: 24px; border-left: 4px solid var(--primary); background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);">
+    <h2 style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.5rem;">✨</span> Strategic AI Summary
+    </h2>
+    <div style="line-height: 1.6; color: var(--text-secondary); font-size: 1.05rem; white-space: pre-line;">
+        {{ strategic_insight | safe }}
+    </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="stats-row" style="margin-bottom: 24px; grid-template-columns: repeat(5, 1fr);">
+    <div class="stat-card" style="border-left: 4px solid var(--primary);">
+        <small>COST PER SQ.YD</small>
+        <div class="card-value">₹{{ "{:,}".format(analytics.kpis.cost_per_sq_yd) }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--secondary);">
+        <small>DAILY BURN RATE</small>
+        <div class="card-value">₹{{ "{:,}".format(analytics.kpis.daily_burn_rate) }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--accent-orange);">
+        <small>REGULATORY INDEX</small>
+        <div class="card-value">{{ analytics.kpis.regulatory_index }}/10</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--accent-purple);">
+        <small>WORKFORCE EFFICIENCY</small>
+        <div class="card-value">{{ analytics.kpis.efficiency_ratio }}%</div>
+    </div>
+    <div class="stat-card" style="border-left: 4px solid var(--accent-red);">
+        <small>SUSTAINABILITY</small>
+        <div class="card-value">{{ analytics.kpis.sustainability_score }}%</div>
+    </div>
+</div>
+
+<!-- PRIMARY DASHBOARD GRID -->
+<div class="analytics-grid">
+    <!-- 1. Cumulative Progress -->
+    <div class="card">
+        <h2 style="color: #106263;"><i class="fas fa-chart-line"></i> Execution Lifecycle</h2>
+        <div class="chart-container">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 2. Phase Cost Allocation -->
+    <div class="card">
+        <h2 style="color: var(--secondary);"><i class="fas fa-chart-pie"></i> Phase Cost Weight</h2>
+        <div class="chart-container">
+            <canvas id="phaseCostChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 3. Resource Breakdown -->
+    <div class="card">
+        <h2 style="color: var(--accent-orange);"><i class="fas fa-cubes"></i> Material vs Labor</h2>
+        <div class="chart-container">
+            <canvas id="resourceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 4. Risk Profile (Radar) -->
+    <div class="card">
+        <h2 style="color: var(--accent-red);"><i class="fas fa-shield-virus"></i> Multi-Factor Risk Profile</h2>
+        <div class="chart-container">
+            <canvas id="riskRadarChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 5. Sustainability Radar -->
+    <div class="card">
+        <h2 style="color: var(--primary);"><i class="fas fa-leaf"></i> Sustainability & ESG</h2>
+        <div class="chart-container">
+            <canvas id="sustainabilityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 6. Labor vs Material Cost Trend -->
+    <div class="card">
+        <h2 style="color: var(--secondary);"><i class="fas fa-wave-square"></i> Cost Dynamics Trend</h2>
+        <div class="chart-container">
+            <canvas id="costDynamicsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 7. Workforce Trends per Phase -->
+    <div class="card">
+        <h2 style="color: var(--accent-purple);"><i class="fas fa-users"></i> Workforce Lifecycle</h2>
+        <div class="chart-container">
+            <canvas id="workforceTrendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 8. Material Consumption Intensity -->
+    <div class="card">
+        <h2 style="color: var(--accent-orange);"><i class="fas fa-mountain"></i> Material Consumption</h2>
+        <div class="chart-container">
+            <canvas id="materialChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 9. Burn Rate Trend -->
+    <div class="card">
+        <h2 style="color: #D97706;"><i class="fas fa-fire"></i> Daily Expenditure Burn</h2>
+        <div class="chart-container">
+            <canvas id="burnRateChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 10. Cost Scenario Variance -->
+    <div class="card">
+        <h2 style="color: var(--primary);"><i class="fas fa-balance-scale"></i> Scenario Variance</h2>
+        <div class="chart-container">
+            <canvas id="varianceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 11. Phase Productivity -->
+    <div class="card">
+        <h2 style="color: var(--accent-purple);"><i class="fas fa-check-double"></i> Phase Productivity Index</h2>
+        <div class="chart-container">
+            <canvas id="productivityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 12. Regulatory Complexity -->
+    <div class="card">
+        <h2 style="color: var(--accent-orange);"><i class="fas fa-file-contract"></i> Regulatory Complexity</h2>
+        <div class="chart-container">
+            <canvas id="regPolarChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 13. Machinery Efficiency -->
+    <div class="card">
+        <h2 style="color: var(--secondary);"><i class="fas fa-cogs"></i> Machinery Utilization</h2>
+        <div class="chart-container">
+            <canvas id="machineryChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='analytics.js') }}"></script>
+<script>
+    // Inject data from server and initialize
+    const chartData = {{ analytics.charts | tojson }};
+    if (chartData) {
+        initAnalytics(chartData);
+    }
+</script>
+{% endblock %}

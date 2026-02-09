@@ -1,11 +1,6 @@
-from groq import Groq
-import os
-import json
+from modules.ai_client import client
 import re
-from datetime import datetime
-
-# Initialize Groq client
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+import json
 
 def analyze_comprehensive_risks(project_data):
     """
@@ -28,192 +23,90 @@ def analyze_comprehensive_risks(project_data):
     machinery = project_data.get('machinery', 'Partial')
     total_cost = project_data.get('total_cost', 5000000)
     
-    prompt = f"""You are a construction risk management expert analyzing potential risks for a construction project in India.
+    prompt = f"""You are a senior geotechnical and construction risk engineer. Perform a TECHNICAL risk assessment for a project in {location}, India.
+Location Data: {location}. Start Date: {start_date}. Duration: {duration_days} days. 
+Sub-surface Context: {soil_type} soil. Machinery: {machinery}.
 
-PROJECT DETAILS:
-- Location: {location}, India
-- Start Date: {start_date}
-- Duration: {duration_days} days
-- Soil Type: {soil_type}
-- Site Accessibility: {site_access}
-- Workforce Size: {workforce_size} workers
-- Machinery: {machinery}
-- Total Budget: ₹{total_cost}
+ANALYSIS REQUIREMENTS:
+1. SEASONAL & ENVIRONMENTAL:
+   - MONSOON: Precise impact check (Start: {start_date}). Calculate probability and days of delay. Provide concrete dewatering and site-sealing solutions.
+   - TEMPERATURE & HUDMIDITY: Analyze impact on CURING TIME. Explain how extreme heat (March-June) or cooling (Nov-Jan) affects structural strength.
+   - FLOODING: Assess local topography risks and provide drainage infrastructure solutions.
 
-COMPREHENSIVE RISK ANALYSIS REQUIRED:
+2. GEOTECHNICAL & STRUCTURAL:
+   - BEARING CAPACITY: Analyze {soil_type} specific risks (e.g. expansiveness, settlement). Provide foundation reinforcement strategies.
+   - GROUNDWATER: Detect seepage risks. Propose specific dewatering or waterproofing measures.
 
-1. WEATHER RISKS:
-   a) Monsoon Impact:
-      - Analyze if project timeline overlaps with monsoon season (June-September)
-      - Calculate potential delay days due to rain
-      - Assess flooding risk based on location
-      - Recommend drainage and waterproofing measures
-   
-   b) Concrete Curing:
-      - Analyze temperature and humidity conditions for start date
-      - Assess curing quality risks
-      - Recommend curing methods and precautions
-   
-   c) Seasonal Delays:
-      - Identify weather-related work stoppages
-      - Calculate buffer days needed
-      - Estimate cost of weather protection measures
+3. RESOURCE & EXECUTION:
+   - Identify "High-Probability Error zones" (e.g. poor curing, shuttering misalignment).
+   - Quantify OVERRUN PROBABILITY and MITIGATION COSTS in INR (₹).
 
-2. SITE RISKS:
-   a) Soil Bearing Capacity ({soil_type} soil):
-      - Assess foundation stability risks
-      - Identify need for soil testing
-      - Recommend foundation reinforcement if needed
-      - Calculate additional foundation costs
-   
-   b) Groundwater Issues:
-      - Assess groundwater table risk for {location}
-      - Identify dewatering requirements
-      - Recommend waterproofing measures
-      - Calculate dewatering and waterproofing costs
-   
-   c) Slope and Leveling:
-      - Assess site leveling requirements
-      - Identify excavation challenges
-      - Calculate additional earthwork costs
-   
-   d) Site Accessibility ({site_access}):
-      - Assess material delivery challenges
-      - Identify equipment access issues
-      - Calculate logistics overhead
+Return ONLY a minified JSON object. NO markdown, NO code blocks, NO preamble.
 
-3. RESOURCE RISKS:
-   a) Labor Shortage:
-      - Assess labor availability in {location}
-      - Identify skill shortage risks
-      - Calculate wage inflation risk
-      - Recommend labor retention strategies
-   
-   b) Equipment Breakdown:
-      - Assess machinery reliability for {machinery} setup
-      - Calculate downtime probability
-      - Recommend backup equipment
-      - Estimate breakdown cost impact
-   
-   c) Budget Overrun:
-      - Identify cost escalation risks
-      - Assess material price volatility
-      - Calculate contingency adequacy
-      - Recommend budget buffer
-   
-   d) Material Supply Chain:
-      - Assess material availability in {location}
-      - Identify supply chain disruption risks
-      - Recommend material procurement strategy
-
-Return ONLY a valid JSON object:
+JSON Structure:
 {{
-    "overall_risk_score": <1-10>,
-    "overall_risk_level": "Low/Medium/High/Critical",
-    
-    "weather_risks": {{
-        "monsoon": {{
-            "risk_level": "Low/Medium/High",
-            "probability": <percentage>,
-            "impact_days": <number>,
-            "description": "Detailed monsoon impact analysis",
-            "mitigation": "Specific mitigation strategies",
-            "mitigation_cost": <number>
+    "overall_risk_score": number, 
+    "overall_risk_level": "string",
+    "risk_categories": [
+        {{
+            "category": "Environmental & Seasonal",
+            "risks": [
+                {{
+                    "title": "Monsoon & Flooding",
+                    "probability": number,
+                    "potential_delay": number,
+                    "mitigation_strategy": "string",
+                    "mitigation_cost": number,
+                    "risk_level": "string"
+                }},
+                {{
+                    "title": "Curing & Temp Variance",
+                    "probability": number,
+                    "impact_description": "Effect on concrete strength and schedule",
+                    "mitigation_strategy": "Season-specific curing protocols",
+                    "mitigation_cost": number,
+                    "risk_level": "string"
+                }}
+            ]
         }},
-        "flooding": {{
-            "risk_level": "Low/Medium/High",
-            "probability": <percentage>,
-            "description": "Flooding risk assessment",
-            "mitigation": "Drainage and protection measures",
-            "mitigation_cost": <number>
+        {{
+            "category": "Geotechnical & Site",
+            "risks": [
+                {{
+                    "title": "Soil Bearing Capacity",
+                    "description": "Risks related to foundation settlement or expansion in {soil_type} soil",
+                    "mitigation_strategy": "Foundation reinforcement methods",
+                    "mitigation_cost": number,
+                    "risk_level": "string"
+                }},
+                {{
+                    "title": "Groundwater Seepage",
+                    "mitigation_strategy": "Dewatering and site waterproofing",
+                    "mitigation_cost": number,
+                    "risk_level": "string"
+                }}
+            ]
         }},
-        "concrete_curing": {{
-            "risk_level": "Low/Medium/High",
-            "description": "Curing conditions analysis",
-            "mitigation": "Curing method recommendations",
-            "mitigation_cost": <number>
-        }},
-        "seasonal_delays": {{
-            "buffer_days": <number>,
-            "cost_impact": <number>,
-            "protection_measures": "Weather protection recommendations"
+        {{
+            "category": "Resource & Financial",
+            "risks": [
+                {{
+                    "title": "Budget & Overrun",
+                    "overrun_probability": number,
+                    "potential_overrun": number,
+                    "additional_contingency": number,
+                    "risk_level": "string"
+                }}
+            ]
         }}
-    }},
-    
-    "site_risks": {{
-        "soil_bearing": {{
-            "risk_level": "Low/Medium/High",
-            "description": "Soil bearing capacity assessment for {soil_type}",
-            "testing_required": true/false,
-            "mitigation": "Foundation reinforcement recommendations",
-            "mitigation_cost": <number>
-        }},
-        "groundwater": {{
-            "risk_level": "Low/Medium/High",
-            "water_table_depth": "Estimated depth in meters",
-            "dewatering_required": true/false,
-            "mitigation": "Dewatering and waterproofing strategy",
-            "mitigation_cost": <number>
-        }},
-        "slope_leveling": {{
-            "risk_level": "Low/Medium/High",
-            "additional_earthwork": <cubic meters>,
-            "mitigation_cost": <number>
-        }},
-        "site_access": {{
-            "risk_level": "Low/Medium/High",
-            "challenges": "Access challenges for {site_access} accessibility",
-            "logistics_overhead": <number>
-        }}
-    }},
-    
-    "resource_risks": {{
-        "labor_shortage": {{
-            "risk_level": "Low/Medium/High",
-            "probability": <percentage>,
-            "skill_gaps": ["List of potential skill shortages"],
-            "wage_inflation_risk": <percentage>,
-            "mitigation": "Labor retention and recruitment strategy",
-            "mitigation_cost": <number>
-        }},
-        "equipment_breakdown": {{
-            "risk_level": "Low/Medium/High",
-            "downtime_probability": <percentage>,
-            "estimated_downtime_days": <number>,
-            "mitigation": "Backup equipment and maintenance strategy",
-            "mitigation_cost": <number>
-        }},
-        "budget_overrun": {{
-            "risk_level": "Low/Medium/High",
-            "probability": <percentage>,
-            "potential_overrun": <number>,
-            "cost_drivers": ["List of main cost escalation factors"],
-            "mitigation": "Budget control measures",
-            "additional_contingency": <number>
-        }},
-        "supply_chain": {{
-            "risk_level": "Low/Medium/High",
-            "critical_materials": ["List of materials with supply risk"],
-            "mitigation": "Procurement and inventory strategy",
-            "mitigation_cost": <number>
-        }}
-    }},
-    
-    "critical_risks": [
-        "Top 3-5 most critical risks that need immediate attention"
     ],
-    
-    "total_mitigation_cost": <number>,
-    "recommended_contingency_percent": <percentage>,
-    
-    "risk_timeline": {{
-        "pre_monsoon_actions": ["Actions to complete before monsoon"],
-        "ongoing_monitoring": ["Continuous monitoring requirements"],
-        "critical_milestones": ["Risk-sensitive project milestones"]
-    }}
-}}
-
-Be SPECIFIC with numbers, costs, and probabilities. Base analysis on real construction industry data for {location}, India in {current_date}."""
+    "risk_management_timeline": [
+        {{ "phase": "Pre-Construction / Pre-Monsoon", "items": ["string"] }},
+        {{ "phase": "Ongoing Monitoring", "items": ["string"] }}
+    ],
+    "total_mitigation_cost": number,
+    "recommended_contingency_percent": number
+}}"""
 
     try:
         completion = client.chat.completions.create(
@@ -239,22 +132,21 @@ Be SPECIFIC with numbers, costs, and probabilities. Base analysis on real constr
 
 
 def parse_risk_json(text):
-    """Parse JSON from AI response, handling markdown code blocks"""
     try:
-        # Remove markdown code blocks if present
-        json_match = re.search(r'```(?:json)?\s*(\{.*\})\s*```', text, re.DOTALL)
+        # Clean text: remove markdown if present
+        text = re.sub(r'```(?:json)?\s*|\s*```', '', text)
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
         if json_match:
-            json_str = json_match.group(1)
-        else:
-            # Try to find JSON object directly
-            json_match = re.search(r'\{.*\}', text, re.DOTALL)
-            json_str = json_match.group(0) if json_match else text
-        
-        return json.loads(json_str)
-    except:
+            json_str = json_match.group()
+            return json.loads(json_str)
         return {
-            "error": "Failed to parse AI response",
-            "raw_response": text[:500],
+            "error": "No JSON found in response",
+            "overall_risk_score": 5,
+            "overall_risk_level": "Medium"
+        }
+    except Exception as e:
+        return {
+            "error": f"Failed to parse AI response: {str(e)}",
             "overall_risk_score": 5,
             "overall_risk_level": "Unknown"
         }

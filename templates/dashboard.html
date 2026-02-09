@@ -1,418 +1,230 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% set active_page = 'dashboard' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVALON — Project Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
+{% block title %}AVALON — Project Dashboard{% endblock %}
 
-<body>
-    <nav class="sidebar">
-        <div class="brand">
-            <span>AVALON</span>
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="header">
+    <div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+            <a href="/" style="color: var(--text-muted); text-decoration: none; font-size: 14px;">Home</a>
+            <span style="color: var(--text-muted); font-size: 14px;">/</span>
+            <span style="color: var(--primary); font-size: 14px; font-weight: 600;">Dashboard</span>
         </div>
-        <a href="/" class="nav-item">New Project</a>
-        <a href="#" class="nav-item active">Analysis Dashboard</a>
-        <a href="/whatif" class="nav-item">What-If Simulator</a>
-        <a href="/risks" class="nav-item">Risk Analysis</a>
-    </nav>
+        <h1>Project Hub</h1>
+        <p style="color: var(--text-muted)">Project: {{ result.base_project.location }} | AI Logic: ACTIVE</p>
+    </div>
+    <div class="budget-badge">
+        <i class="fas fa-microchip"></i> Total Estimate: ₹{{ "{:,}".format(result.total_cost) }}
+    </div>
+</div>
 
-    <main class="main-content">
-        <div class="dashboard-container">
-            <header class="header">
-                <div>
-                    <h1>Analysis Dashboard</h1>
-                    <p style="color: var(--text-muted)">
-                        {{ result.params.location }} • {{ result.params.quality }} Grade • {{ result.params.priority }}
-                        Priority
-                    </p>
-                </div>
-                <div class="budget-badge">
-                    Est. Cost: ₹{{ "{:,.0f}".format(result.cost.total_cost) }}
-                </div>
-            </header>
+<!-- MAIN METRICS OVERVIEW -->
+<div class="card" style="margin-bottom: 24px;">
+    <h2 style="color: #106263;"><i class="fas fa-project-diagram"></i> Core Execution Stats</h2>
+    <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-card" style="border-left: 4px solid var(--primary); padding-left: 20px;">
+            <small>Planned Duration</small>
+            <div class="card-value">{{ result.duration_days }} Days</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Weather Buffer Included</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--secondary); padding-left: 20px;">
+            <small>Workforce Size</small>
+            <div class="card-value">{{ result.workforce_size }} Workers</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Optimal Crew Density</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--accent-orange); padding-left: 20px;">
+            <small>Cost Effectiveness</small>
+            <div class="card-value">₹{{ "{:,}".format(result.cost_per_sqyd) }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Per Sq. Yard</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--accent-red); padding-left: 20px;">
+            <small>Weather Delay</small>
+            <div class="card-value" style="color: #C53030;">{{ result.timeline.weather_delays }} Days</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Seasonal Forecast</div>
+        </div>
+    </div>
+</div>
 
-            <!-- KEY STATS ROW -->
-            <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="stat-card">
-                    <small>TOTAL DAYS</small>
-                    <div class="card-value" style="color: var(--primary)">{{ result.timeline.duration_days }}</div>
-                </div>
-                <div class="stat-card">
-                    <small>LABOUR COST</small>
-                    <div class="card-value">₹{{ "{:,}".format(result.cost.labour_cost) }}</div>
-                </div>
-                <div class="stat-card">
-                    <small>MATERIAL COST</small>
-                    <div class="card-value">₹{{ "{:,}".format(result.cost.material_cost) }}</div>
-                </div>
-                <div class="stat-card">
-                    <small>WORKFORCE</small>
-                    <div class="card-value">{{ result.workforce.masons + result.workforce.helpers +
-                        result.workforce.steel_workers }} px</div>
-                </div>
-            </div>
+<div class="dashboard-grid">
+    <!-- RESOURCE DISTRIBUTION -->
+    <div class="card">
+        <h2 style="color: #106263;"><i class="fas fa-chart-pie"></i> Budget Allocation</h2>
+        <div style="height: 250px;">
+            <canvas id="costChart"></canvas>
+        </div>
+    </div>
 
-            <!-- 7-PHASE CONSTRUCTION TIMELINE -->
-            {% if result.phase_breakdown %}
-            <div class="card" style="margin-top: 30px;">
-                <h2>Construction Phase Breakdown</h2>
-                <p style="color: var(--text-muted); margin-bottom: 20px;">
-                    Detailed timeline and cost for each construction phase
-                </p>
+    <!-- WORKFORCE COMPOSITION -->
+    <div class="card">
+        <h2 style="color: var(--secondary);"><i class="fas fa-users-cog"></i> Crew Specialization</h2>
+        <div style="height: 250px;">
+            <canvas id="workforceChart"></canvas>
+        </div>
+    </div>
 
-                <div style="display: grid; gap: 12px;">
-                    {% if result.phase_breakdown.site_preparation %}
-                    <div
-                        style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #10B981;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="color: #10B981; margin: 0; font-size: 16px;">Phase 1: Site Preparation</h3>
-                            <div style="display: flex; gap: 20px;">
-                                <span style="color: var(--text-muted); font-size: 14px;">₹{{
-                                    "{:,}".format(result.phase_breakdown.site_preparation.cost) }}</span>
-                                <span style="color: var(--text-muted); font-size: 14px;">{{
-                                    result.phase_breakdown.site_preparation.duration_days }} days</span>
-                            </div>
-                        </div>
-                        <p style="margin: 0; font-size: 14px; color: var(--text-muted);">{{
-                            result.phase_breakdown.site_preparation.description }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if result.phase_breakdown.foundation %}
-                    <div
-                        style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #3B82F6;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="color: #3B82F6; margin: 0; font-size: 16px;">Phase 2: Foundation</h3>
-                            <div style="display: flex; gap: 20px;">
-                                <span style="color: var(--text-muted); font-size: 14px;">₹{{
-                                    "{:,}".format(result.phase_breakdown.foundation.cost) }}</span>
-                                <span style="color: var(--text-muted); font-size: 14px;">{{
-                                    result.phase_breakdown.foundation.duration_days }} days</span>
-                            </div>
-                        </div>
-                        <p style="margin: 0; font-size: 14px; color: var(--text-muted);">{{
-                            result.phase_breakdown.foundation.description }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if result.phase_breakdown.structural_work %}
-                    <div
-                        style="background: rgba(139, 92, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #8B5CF6;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="color: #8B5CF6; margin: 0; font-size: 16px;">Phase 3: Structural Work</h3>
-                            <div style="display: flex; gap: 20px;">
-                                <span style="color: var(--text-muted); font-size: 14px;">₹{{
-                                    "{:,}".format(result.phase_breakdown.structural_work.cost) }}</span>
-                                <span style="color: var(--text-muted); font-size: 14px;">{{
-                                    result.phase_breakdown.structural_work.duration_days }} days</span>
-                            </div>
-                        </div>
-                        <p style="margin: 0; font-size: 14px; color: var(--text-muted);">{{
-                            result.phase_breakdown.structural_work.description }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if result.phase_breakdown.brickwork %}
-                    <div
-                        style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #F59E0B;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="color: #F59E0B; margin: 0; font-size: 16px;">Phase 4: Brickwork</h3>
-                            <div style="display: flex; gap: 20px;">
-                                <span style="color: var(--text-muted); font-size: 14px;">₹{{
-                                    "{:,}".format(result.phase_breakdown.brickwork.cost) }}</span>
-                                <span style="color: var(--text-muted); font-size: 14px;">{{
-                                    result.phase_breakdown.brickwork.duration_days }} days</span>
-                            </div>
-                        </div>
-                        <p style="margin: 0; font-size: 14px; color: var(--text-muted);">{{
-                            result.phase_breakdown.brickwork.description }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if result.phase_breakdown.electrical_plumbing %}
-                    <div
-                        style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #EC4899;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="color: #EC4899; margin: 0; font-size: 16px;">Phase 5: Electrical & Plumbing</h3>
-                            <div style="display: flex; gap: 20px;">
-                                <span style="color: var(--text-muted); font-size: 14px;">₹{{
-                                    "{:,}".format(result.phase_breakdown.electrical_plumbing.cost) }}</span>
-                                <span style="color: var(--text-muted); font-size: 14px;">{{
-                                    result.phase_breakdown.electrical_plumbing.duration_days }} days</span>
-                            </div>
-                        </div>
-                        <p style="margin: 0; font-size: 14px; color: var(--text-muted);">{{
-                            result.phase_breakdown.electrical_plumbing.description }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if result.phase_breakdown.finishing %}
-                    <div
-                        style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #6366F1;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="color: #6366F1; margin: 0; font-size: 16px;">Phase 6: Finishing</h3>
-                            <div style="display: flex; gap: 20px;">
-                                <span style="color: var(--text-muted); font-size: 14px;">₹{{
-                                    "{:,}".format(result.phase_breakdown.finishing.cost) }}</span>
-                                <span style="color: var(--text-muted); font-size: 14px;">{{
-                                    result.phase_breakdown.finishing.duration_days }} days</span>
-                            </div>
-                        </div>
-                        <p style="margin: 0; font-size: 14px; color: var(--text-muted);">{{
-                            result.phase_breakdown.finishing.description }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if result.phase_breakdown.handover %}
-                    <div
-                        style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #EF4444;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <h3 style="color: #EF4444; margin: 0; font-size: 16px;">Phase 7: Handover</h3>
-                            <div style="display: flex; gap: 20px;">
-                                <span style="color: var(--text-muted); font-size: 14px;">₹{{
-                                    "{:,}".format(result.phase_breakdown.handover.cost) }}</span>
-                                <span style="color: var(--text-muted); font-size: 14px;">{{
-                                    result.phase_breakdown.handover.duration_days }} days</span>
-                            </div>
-                        </div>
-                        <p style="margin: 0; font-size: 14px; color: var(--text-muted);">{{
-                            result.phase_breakdown.handover.description }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="dashboard-grid" style="margin-top: 30px;">
-                <!-- CHART SECTION -->
-                <div class="card">
-                    <h2>Cost Breakdown</h2>
-                    <div class="chart-container">
-                        <canvas id="costChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h2>Workforce Distribution</h2>
-                    <div class="chart-container">
-                        <canvas id="workforceChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- LAYOUT & AI -->
-            <div class="dashboard-grid">
-                <div class="card">
-                    <h2>Blueprint & Layout Advice</h2>
-                    <div style="margin-bottom: 15px;">
-                        <strong>Shape:</strong> {{ result.blueprint.config.shape }} |
-                        <strong>Kitchen:</strong> {{ result.blueprint.config.kitchen }}
-                    </div>
-
-                    <ul style="list-style: none; padding: 0;">
-                        {% for advice in result.blueprint.layout_advice %}
-                        <li
-                            style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--accent-blue);">
-                            {{ advice }}
-                        </li>
-                        {% endfor %}
-                    </ul>
-
-                    <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div class="mini-card">
-                            <small>Living Room</small>
-                            <div>{{ "%.1f"|format(result.blueprint.allocation.living_room) }} sq.yd</div>
-                        </div>
-                        <div class="mini-card">
-                            <small>Bedroom (avg)</small>
-                            <div>{{ "%.1f"|format(result.blueprint.allocation.bedroom) }} sq.yd</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="assistant-panel">
-                    <h2>✨ AI Assistant Insight</h2>
-                    <div class="ai-message">
-                        {{ result.ai.insight }}
-                    </div>
-                    {% if result.ai.risk %}
-                    <div class="ai-risk">
-                        <strong>⚠️ Risk Factors:</strong><br>
-                        {{ result.ai.risk }}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- DETAILED COST BREAKDOWN EXPLANATION -->
-            {% if result.cost.breakdown_explanation %}
-            <div class="card" style="margin-top: 30px;">
-                <h2>💰 Detailed Cost Breakdown & Justification</h2>
-                <p style="color: var(--text-muted); margin-bottom: 20px;">
-                    AI-powered analysis using real-time market data
-                </p>
-
-                <div style="display: grid; gap: 15px;">
-                    <!-- Material Details -->
-                    <div
-                        style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #10B981;">
-                        <h3 style="color: #10B981; margin: 0 0 10px 0; font-size: 16px;">🧱 Material Cost Breakdown</h3>
-                        <p style="margin: 0; line-height: 1.6;">{{ result.cost.breakdown_explanation.material_details }}
-                        </p>
-                    </div>
-
-                    <!-- Labour Details -->
-                    <div
-                        style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #3B82F6;">
-                        <h3 style="color: #3B82F6; margin: 0 0 10px 0; font-size: 16px;">👷 Labour Cost Breakdown</h3>
-                        <p style="margin: 0; line-height: 1.6;">{{ result.cost.breakdown_explanation.labour_details }}
-                        </p>
-                    </div>
-
-                    <!-- Overhead Details -->
-                    <div
-                        style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #F59E0B;">
-                        <h3 style="color: #F59E0B; margin: 0 0 10px 0; font-size: 16px;">⚙️ Overhead Cost Breakdown</h3>
-                        <p style="margin: 0; line-height: 1.6;">{{ result.cost.breakdown_explanation.overhead_details }}
-                        </p>
-                    </div>
-
-                    <!-- Contingency Details -->
-                    <div
-                        style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #EF4444;">
-                        <h3 style="color: #EF4444; margin: 0 0 10px 0; font-size: 16px;">🛡️ Contingency Buffer</h3>
-                        <p style="margin: 0; line-height: 1.6;">{{ result.cost.breakdown_explanation.contingency_details
-                            }}</p>
-                    </div>
-
-                    <!-- Quality & Priority Impact -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div
-                            style="background: rgba(139, 92, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #8B5CF6;">
-                            <h3 style="color: #8B5CF6; margin: 0 0 10px 0; font-size: 16px;">⭐ Quality Impact</h3>
-                            <p style="margin: 0; line-height: 1.6;">{{ result.cost.breakdown_explanation.quality_impact
-                                }}</p>
-                        </div>
-                        <div
-                            style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #EC4899;">
-                            <h3 style="color: #EC4899; margin: 0 0 10px 0; font-size: 16px;">⚡ Priority Impact</h3>
-                            <p style="margin: 0; line-height: 1.6;">{{ result.cost.breakdown_explanation.priority_impact
-                                }}</p>
-                        </div>
-                    </div>
-
-                    <!-- Market Factors -->
-                    <div
-                        style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #6366F1;">
-                        <h3 style="color: #6366F1; margin: 0 0 10px 0; font-size: 16px;">📈 Current Market Factors</h3>
-                        <p style="margin: 0; line-height: 1.6;">{{ result.cost.breakdown_explanation.market_factors }}
-                        </p>
-                    </div>
-
-                    <!-- Overall Justification -->
-                    <div
-                        style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 8px; border: 2px solid var(--primary);">
-                        <h3 style="color: var(--primary); margin: 0 0 10px 0; font-size: 18px;">📊 Overall Cost
-                            Justification</h3>
-                        <p style="margin: 0; line-height: 1.6; font-size: 15px;">{{
-                            result.cost.breakdown_explanation.cost_justification }}</p>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
+    <!-- AI INSIGHTS PANEL -->
+    <div class="card assistant-panel">
+        <h2 style="color: var(--accent-purple);"><i class="fas fa-robot"></i> AI Strategic Insight</h2>
+        <div class="ai-message">
+            {{ result.ai_insight }}
         </div>
 
-    </main>
+        <div
+            style="margin-top: 15px; padding: 15px; background: #FFFFFF; border-radius: 12px; border: 1px dashed var(--accent-purple);">
+            <strong style="color: var(--accent-purple); font-size: 0.8rem; text-transform: uppercase;">Engine
+                Calculation Logic:</strong>
+            <p style="margin-top: 5px; font-size: 0.85rem; color: var(--text-muted); word-break: break-all;">
+                {{ result.calculation_logic or result.cost.breakdown_explanation.cost_justification }}
+            </p>
+        </div>
 
-    <script>
-        // Data injected from server-side template
-        const costData = [
-            {{ result.cost.material_cost }},
-        { { result.cost.labour_cost } },
-        { { result.cost.overhead } },
-        { { result.cost.contingency } }
-        ];
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <a href="/risks" class="btn-primary" style="flex: 1; font-size: 0.9rem;">
+                Analyze Risks
+            </a>
+            <a href="/whatif" class="btn-primary"
+                style="flex: 1; font-size: 0.9rem; background: var(--accent-purple); color: #FFF; border: none;">
+                Run What-If
+            </a>
+        </div>
+    </div>
+</div>
 
-        const workforceData = [
-            {{ result.workforce.masons }},
-        { { result.workforce.helpers } },
-        { { result.workforce.steel_workers } },
-        { { result.workforce.carpenters } },
-        { { result.workforce.supervisors } }
-        ];
+<!-- PHASE BREAKDOWN -->
+<div class="card" style="margin-top: 24px;">
+    <h2 style="color: #106263;"><i class="fas fa-tasks"></i> Project Milestone Schedule</h2>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Phase</th>
+                    <th>Duration</th>
+                    <th>Cost</th>
+                    <th>Strategic Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for phase_id, phase in result.phase_breakdown.items() %}
+                <tr style="transition: background 0.2s;">
+                    <td style="text-transform: capitalize; font-weight: 600; color: var(--text-main);">{{
+                        phase_id.replace('_', ' ') }}</td>
+                    <td>{{ phase.duration_days }} Days</td>
+                    <td style="font-weight: 600;">₹{{ "{:,}".format(phase.cost) }}</td>
+                    <td style="color: var(--text-muted); font-size: 0.9rem;">{{ phase.description }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
 
-        // COST CHART
-        const ctxCost = document.getElementById('costChart').getContext('2d');
-        new Chart(ctxCost, {
-            type: 'bar',
-            data: {
-                labels: ['Material', 'Labor', 'Overhead', 'Contingency'],
-                datasets: [{
-                    label: 'Cost (₹)',
-                    data: costData,
-                    backgroundColor: [
-                        '#10B981', '#3B82F6', '#F59E0B', '#EF4444'
-                    ],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#374151' },
-                        ticks: { color: '#9CA3AF' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#9CA3AF' }
-                    }
-                }
+{% block scripts %}
+<script>
+    // Data from Flask
+    const resourceCosts = {{ result.resource_costs | tojson }};
+    const workforce = {{ result.workforce | tojson }};
+
+    const costData = [
+        resourceCosts.material_cost,
+        resourceCosts.labor_cost,
+        resourceCosts.overhead,
+        resourceCosts.contingency
+    ];
+
+    const workforceData = [
+        workforce.masons,
+        workforce.helpers,
+        workforce.steel_workers,
+        workforce.carpenters,
+        workforce.supervisors
+    ];
+
+    // Chart Configuration
+    Chart.defaults.font.family = "'Outfit', 'Inter', sans-serif";
+    Chart.defaults.color = "#636E72";
+
+    // Cost Chart
+    new Chart(document.getElementById('costChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Material', 'Labor', 'Overhead', 'Contingency'],
+            datasets: [{
+                data: costData,
+                backgroundColor: ['#7ED9C3', '#A0C4FF', '#FFD6A5', '#FFADAD'],
+                borderWidth: 0,
+                hoverOffset: 20
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
             }
-        });
+        }
+    });
 
-        // WORKFORCE CHART
-        const ctxWork = document.getElementById('workforceChart').getContext('2d');
-        new Chart(ctxWork, {
-            type: 'doughnut',
-            data: {
-                labels: ['Masons', 'Helpers', 'Steel Workers', 'Carpenters', 'Supervisors'],
-                datasets: [{
-                    data: workforceData,
-                    backgroundColor: [
-                        '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'
-                    ],
-                    borderWidth: 0
-                }]
+    // Workforce Chart
+    new Chart(document.getElementById('workforceChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Masons', 'Helpers', 'Steel', 'Carpenters', 'Supervisors'],
+            datasets: [{
+                label: 'Crew Count',
+                data: workforceData,
+                backgroundColor: 'rgba(160, 196, 255, 0.6)',
+                borderColor: '#A0C4FF',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                x: { grid: { display: false } }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right', labels: { color: '#9CA3AF' } }
-                }
+            plugins: {
+                legend: { display: false }
             }
-        });
-    </script>
-</body>
+        }
+    });
+</script>
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
 
-</html>
+    th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 2px solid var(--border);
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    td {
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover {
+        background: #F8F9FA;
+    }
+</style>
+{% endblock %}

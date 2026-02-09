@@ -1,357 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% set active_page = 'risks' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVALON — Risk Analysis</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+{% block title %}AVALON — Risk Analysis Dashboard{% endblock %}
 
-<body>
-    <nav class="sidebar">
-        <div class="brand">
-            <span>AVALON</span>
+{% block content %}
+<div class="header">
+    <div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+            <a href="/" style="color: var(--text-muted); text-decoration: none; font-size: 14px;">Home</a>
+            <span style="color: var(--text-muted); font-size: 14px;">/</span>
+            <a href="/dashboard" style="color: var(--text-muted); text-decoration: none; font-size: 14px;">Dashboard</a>
+            <span style="color: var(--text-muted); font-size: 14px;">/</span>
+            <span style="color: var(--primary); font-size: 14px; font-weight: 600;">Risk Analysis</span>
         </div>
-        <a href="/" class="nav-item">New Project</a>
-        <a href="#" class="nav-item">Analysis Dashboard</a>
-        <a href="/whatif" class="nav-item">What-If Simulator</a>
-        <a href="/risks" class="nav-item active">Risk Analysis</a>
-    </nav>
+        <h1>Risk Assessment</h1>
+        <p style="color: var(--text-muted)">Technical & Environmental Risk Mitigation Control</p>
+    </div>
+    {% if risk_analysis %}
+    <div class="budget-badge">
+        <i class="fas fa-shield-alt"></i> Risk Score: {{ risk_analysis.overall_risk_score }}/10
+    </div>
+    {% endif %}
+</div>
 
-    <main class="main-content">
-        <header class="header">
-            <div>
-                <h1>Risk Analysis</h1>
-                <p style="color: var(--text-muted)">Comprehensive risk assessment with AI-powered mitigation strategies
-                </p>
-            </div>
-            {% if risk_analysis %}
-            <div class="budget-badge"
-                style="background: {% if risk_analysis.overall_risk_level == 'Low' %}rgba(16, 185, 129, 0.2){% elif risk_analysis.overall_risk_level == 'Medium' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %};">
-                Risk Level: {{ risk_analysis.overall_risk_level }}
-            </div>
-            {% endif %}
-        </header>
+{% if not risk_analysis %}
+<div class="card">
+    <h2>No Risk Analysis Available</h2>
+    <p style="color: var(--text-muted);">Please run a project analysis first to view comprehensive risk assessment.
+    </p>
+    <a href="/" class="btn-primary" style="text-decoration: none; display: inline-block; margin-top: 20px;">
+        Create New Project
+    </a>
+</div>
+{% else %}
 
-        {% if not risk_analysis %}
-        <div class="card">
-            <h2>No Risk Analysis Available</h2>
-            <p style="color: var(--text-muted);">Please run a project analysis first to view comprehensive risk
-                assessment.</p>
-            <a href="/" class="btn-primary" style="text-decoration: none; display: inline-block; margin-top: 20px;">
-                Create New Project
-            </a>
+<div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="card stat-card" style="border-left: 4px solid var(--accent-red);">
+        <small>Total Mitigation Cost</small>
+        <div class="card-value">₹{{ "{:,.0f}".format(risk_analysis.total_mitigation_cost) }}</div>
+    </div>
+    <div class="card stat-card" style="border-left: 4px solid var(--primary);">
+        <small>Rec. Contingency</small>
+        <div class="card-value">{{ risk_analysis.recommended_contingency_percent }}%</div>
+    </div>
+    <div class="card stat-card" style="border-left: 4px solid var(--accent-purple);">
+        <small>Risk Level</small>
+        <div class="card-value">{{ risk_analysis.overall_risk_level }}</div>
+    </div>
+    <div class="card stat-card" style="border-left: 4px solid var(--secondary);">
+        <small>Active Risks</small>
+        <div class="card-value">{{ risk_analysis.risk_categories|length }} Categories</div>
+    </div>
+</div>
+
+<!-- Technical Risk Grid -->
+<div class="dashboard-grid">
+    {% for category in risk_analysis.risk_categories %}
+    <div class="card">
+        <h2 style="color: #106263;"><i class="fas fa-exclamation-triangle"></i> {{ category.category }}</h2>
+
+        {% for risk in category.risks %}
+        <div
+            style="background: #F8F9FA; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <h3 style="font-size: 1rem; color: var(--text-main);">{{ risk.title }}</h3>
+                <span style="font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 700; 
+                        {% if risk.risk_level == 'High' %} background: #FFF5F5; color: #C53030;
+                        {% elif risk.risk_level == 'Medium' %} background: #FFFBEB; color: #D97706;
+                        {% else %} background: #F0FDF4; color: #166534; {% endif %}">
+                    {{ risk.risk_level }}
+                </span>
+            </div>
+
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">{{ risk.description if
+                risk.description else risk.impact_description }}</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
+                <div>
+                    <strong
+                        style="display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase;">Probability</strong>
+                    <span>{{ risk.probability if risk.probability else risk.overrun_probability }}%</span>
+                </div>
+                <div>
+                    <strong
+                        style="display: block; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase;">Potential
+                        Impact</strong>
+                    <span>{% if risk.potential_delay %}{{ risk.potential_delay }} Days{% elif risk.potential_overrun
+                        %}₹{{ "{:,.0f}".format(risk.potential_overrun) }}{% else %}Structural{% endif %}</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px;">
+                <strong style="display: block; color: #106263; font-size: 0.75rem; margin-bottom: 4px;">MITIGATION
+                    STRATEGY:</strong>
+                <span style="font-size: 0.85rem;">{{ risk.mitigation_strategy }}</span>
+            </div>
         </div>
-        {% else %}
+        {% endfor %}
+    </div>
+    {% endfor %}
 
-        <!-- OVERALL RISK SUMMARY -->
-        <div class="card">
-            <h2>Overall Risk Assessment</h2>
-            <div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="stat-card">
-                    <small>RISK SCORE</small>
-                    <div class="card-value"
-                        style="color: {% if risk_analysis.overall_risk_score <= 3 %}var(--accent-green){% elif risk_analysis.overall_risk_score <= 6 %}var(--accent-orange){% else %}var(--accent-red){% endif %}">
-                        {{ risk_analysis.overall_risk_score }}/10
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <small>TOTAL MITIGATION COST</small>
-                    <div class="card-value">₹{{ "{:,}".format(risk_analysis.get('total_mitigation_cost', 0)) }}</div>
-                </div>
-                <div class="stat-card">
-                    <small>RECOMMENDED CONTINGENCY</small>
-                    <div class="card-value" style="color: var(--primary)">{{
-                        risk_analysis.get('recommended_contingency_percent', 10) }}%</div>
-                </div>
-            </div>
-
-            {% if risk_analysis.critical_risks %}
+    <!-- Risk Timeline Card -->
+    <div class="card">
+        <h2 style="color: var(--accent-purple);"><i class="fas fa-history"></i> Risk Mitigation Timeline</h2>
+        <div class="assistant-panel" style="background: transparent; border: none; padding: 0;">
+            {% for phase in risk_analysis.risk_management_timeline %}
             <div
-                style="margin-top: 20px; padding: 20px; background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent-red); border-radius: 8px;">
-                <h3 style="margin: 0 0 15px 0; color: var(--accent-red);">Critical Risks Requiring Immediate Attention
-                </h3>
-                <ul style="margin: 0; padding-left: 20px;">
-                    {% for risk in risk_analysis.critical_risks %}
-                    <li style="margin-bottom: 8px; color: var(--text);">{{ risk }}</li>
+                style="margin-bottom: 20px; position: relative; padding-left: 20px; border-left: 2px solid var(--accent-purple);">
+                <h4 style="font-size: 0.9rem; margin-bottom: 5px; color: var(--text-main);">{{ phase.phase }}</h4>
+                <ul style="list-style: none; font-size: 0.85rem; color: var(--text-muted);">
+                    {% for item in phase['items'] %}
+                    <li style="margin-bottom: 4px;"><i class="fas fa-check-circle" style="color: var(--primary);"></i>
+                        {{ item }}</li>
                     {% endfor %}
                 </ul>
             </div>
-            {% endif %}
+            {% endfor %}
         </div>
-
-        <!-- WEATHER RISKS -->
-        {% if risk_analysis.weather_risks %}
-        <div class="card">
-            <h2>Weather Risks</h2>
-
-            <div style="display: grid; gap: 15px;">
-                <!-- Monsoon Risk -->
-                {% if risk_analysis.weather_risks.monsoon %}
-                <div
-                    style="padding: 20px; background: rgba(59, 130, 246, 0.05); border-left: 4px solid {% if risk_analysis.weather_risks.monsoon.risk_level == 'Low' %}var(--accent-green){% elif risk_analysis.weather_risks.monsoon.risk_level == 'Medium' %}var(--accent-orange){% else %}var(--accent-red){% endif %}; border-radius: 8px;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0; color: var(--primary);">Monsoon Impact</h3>
-                        <span
-                            style="padding: 4px 12px; background: {% if risk_analysis.weather_risks.monsoon.risk_level == 'Low' %}rgba(16, 185, 129, 0.2){% elif risk_analysis.weather_risks.monsoon.risk_level == 'Medium' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                            {{ risk_analysis.weather_risks.monsoon.risk_level }} Risk
-                        </span>
-                    </div>
-                    <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 14px;">{{
-                        risk_analysis.weather_risks.monsoon.description }}</p>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
-                        <div>
-                            <small style="color: var(--text-muted);">Probability</small>
-                            <div style="font-size: 1.2rem; font-weight: 600;">{{
-                                risk_analysis.weather_risks.monsoon.probability }}%</div>
-                        </div>
-                        <div>
-                            <small style="color: var(--text-muted);">Potential Delay</small>
-                            <div style="font-size: 1.2rem; font-weight: 600;">{{
-                                risk_analysis.weather_risks.monsoon.impact_days }} days</div>
-                        </div>
-                    </div>
-                    <div
-                        style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-green);">Mitigation Strategy:</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 14px;">{{ risk_analysis.weather_risks.monsoon.mitigation
-                            }}</p>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px; color: var(--text-muted);">Mitigation Cost:</span>
-                        <span style="font-size: 16px; font-weight: 600;">₹{{
-                            "{:,}".format(risk_analysis.weather_risks.monsoon.mitigation_cost) }}</span>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Flooding Risk -->
-                {% if risk_analysis.weather_risks.flooding %}
-                <div
-                    style="padding: 20px; background: rgba(59, 130, 246, 0.05); border-left: 4px solid {% if risk_analysis.weather_risks.flooding.risk_level == 'Low' %}var(--accent-green){% elif risk_analysis.weather_risks.flooding.risk_level == 'Medium' %}var(--accent-orange){% else %}var(--accent-red){% endif %}; border-radius: 8px;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0; color: var(--primary);">Flooding Risk</h3>
-                        <span
-                            style="padding: 4px 12px; background: {% if risk_analysis.weather_risks.flooding.risk_level == 'Low' %}rgba(16, 185, 129, 0.2){% elif risk_analysis.weather_risks.flooding.risk_level == 'Medium' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                            {{ risk_analysis.weather_risks.flooding.risk_level }} Risk
-                        </span>
-                    </div>
-                    <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 14px;">{{
-                        risk_analysis.weather_risks.flooding.description }}</p>
-                    <div
-                        style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-green);">Mitigation Strategy:</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 14px;">{{
-                            risk_analysis.weather_risks.flooding.mitigation }}</p>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px; color: var(--text-muted);">Mitigation Cost:</span>
-                        <span style="font-size: 16px; font-weight: 600;">₹{{
-                            "{:,}".format(risk_analysis.weather_risks.flooding.mitigation_cost) }}</span>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- SITE RISKS -->
-        {% if risk_analysis.site_risks %}
-        <div class="card">
-            <h2>Site Risks</h2>
-
-            <div style="display: grid; gap: 15px;">
-                <!-- Soil Bearing Risk -->
-                {% if risk_analysis.site_risks.soil_bearing %}
-                <div
-                    style="padding: 20px; background: rgba(139, 92, 246, 0.05); border-left: 4px solid {% if risk_analysis.site_risks.soil_bearing.risk_level == 'Low' %}var(--accent-green){% elif risk_analysis.site_risks.soil_bearing.risk_level == 'Medium' %}var(--accent-orange){% else %}var(--accent-red){% endif %}; border-radius: 8px;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0; color: #8B5CF6;">Soil Bearing Capacity</h3>
-                        <span
-                            style="padding: 4px 12px; background: {% if risk_analysis.site_risks.soil_bearing.risk_level == 'Low' %}rgba(16, 185, 129, 0.2){% elif risk_analysis.site_risks.soil_bearing.risk_level == 'Medium' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                            {{ risk_analysis.site_risks.soil_bearing.risk_level }} Risk
-                        </span>
-                    </div>
-                    <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 14px;">{{
-                        risk_analysis.site_risks.soil_bearing.description }}</p>
-                    {% if risk_analysis.site_risks.soil_bearing.testing_required %}
-                    <div
-                        style="padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-orange);">⚠️ Soil Testing Required</strong>
-                    </div>
-                    {% endif %}
-                    <div
-                        style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-green);">Mitigation Strategy:</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 14px;">{{
-                            risk_analysis.site_risks.soil_bearing.mitigation }}</p>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px; color: var(--text-muted);">Mitigation Cost:</span>
-                        <span style="font-size: 16px; font-weight: 600;">₹{{
-                            "{:,}".format(risk_analysis.site_risks.soil_bearing.mitigation_cost) }}</span>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Groundwater Risk -->
-                {% if risk_analysis.site_risks.groundwater %}
-                <div
-                    style="padding: 20px; background: rgba(139, 92, 246, 0.05); border-left: 4px solid {% if risk_analysis.site_risks.groundwater.risk_level == 'Low' %}var(--accent-green){% elif risk_analysis.site_risks.groundwater.risk_level == 'Medium' %}var(--accent-orange){% else %}var(--accent-red){% endif %}; border-radius: 8px;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0; color: #8B5CF6;">Groundwater Issues</h3>
-                        <span
-                            style="padding: 4px 12px; background: {% if risk_analysis.site_risks.groundwater.risk_level == 'Low' %}rgba(16, 185, 129, 0.2){% elif risk_analysis.site_risks.groundwater.risk_level == 'Medium' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                            {{ risk_analysis.site_risks.groundwater.risk_level }} Risk
-                        </span>
-                    </div>
-                    <p style="margin: 0 0 15px 0; color: var(--text-muted); font-size: 14px;">Water Table Depth: {{
-                        risk_analysis.site_risks.groundwater.water_table_depth }}</p>
-                    {% if risk_analysis.site_risks.groundwater.dewatering_required %}
-                    <div
-                        style="padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-orange);">⚠️ Dewatering Required</strong>
-                    </div>
-                    {% endif %}
-                    <div
-                        style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-green);">Mitigation Strategy:</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 14px;">{{
-                            risk_analysis.site_risks.groundwater.mitigation }}</p>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px; color: var(--text-muted);">Mitigation Cost:</span>
-                        <span style="font-size: 16px; font-weight: 600;">₹{{
-                            "{:,}".format(risk_analysis.site_risks.groundwater.mitigation_cost) }}</span>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- RESOURCE RISKS -->
-        {% if risk_analysis.resource_risks %}
-        <div class="card">
-            <h2>Resource Risks</h2>
-
-            <div style="display: grid; gap: 15px;">
-                <!-- Labor Shortage -->
-                {% if risk_analysis.resource_risks.labor_shortage %}
-                <div
-                    style="padding: 20px; background: rgba(245, 158, 11, 0.05); border-left: 4px solid {% if risk_analysis.resource_risks.labor_shortage.risk_level == 'Low' %}var(--accent-green){% elif risk_analysis.resource_risks.labor_shortage.risk_level == 'Medium' %}var(--accent-orange){% else %}var(--accent-red){% endif %}; border-radius: 8px;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0; color: var(--accent-orange);">Labor Shortage</h3>
-                        <span
-                            style="padding: 4px 12px; background: {% if risk_analysis.resource_risks.labor_shortage.risk_level == 'Low' %}rgba(16, 185, 129, 0.2){% elif risk_analysis.resource_risks.labor_shortage.risk_level == 'Medium' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                            {{ risk_analysis.resource_risks.labor_shortage.risk_level }} Risk
-                        </span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
-                        <div>
-                            <small style="color: var(--text-muted);">Shortage Probability</small>
-                            <div style="font-size: 1.2rem; font-weight: 600;">{{
-                                risk_analysis.resource_risks.labor_shortage.probability }}%</div>
-                        </div>
-                        <div>
-                            <small style="color: var(--text-muted);">Wage Inflation Risk</small>
-                            <div style="font-size: 1.2rem; font-weight: 600;">{{
-                                risk_analysis.resource_risks.labor_shortage.wage_inflation_risk }}%</div>
-                        </div>
-                    </div>
-                    <div
-                        style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-green);">Mitigation Strategy:</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 14px;">{{
-                            risk_analysis.resource_risks.labor_shortage.mitigation }}</p>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px; color: var(--text-muted);">Mitigation Cost:</span>
-                        <span style="font-size: 16px; font-weight: 600;">₹{{
-                            "{:,}".format(risk_analysis.resource_risks.labor_shortage.mitigation_cost) }}</span>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Budget Overrun -->
-                {% if risk_analysis.resource_risks.budget_overrun %}
-                <div
-                    style="padding: 20px; background: rgba(239, 68, 68, 0.05); border-left: 4px solid {% if risk_analysis.resource_risks.budget_overrun.risk_level == 'Low' %}var(--accent-green){% elif risk_analysis.resource_risks.budget_overrun.risk_level == 'Medium' %}var(--accent-orange){% else %}var(--accent-red){% endif %}; border-radius: 8px;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0; color: var(--accent-red);">Budget Overrun</h3>
-                        <span
-                            style="padding: 4px 12px; background: {% if risk_analysis.resource_risks.budget_overrun.risk_level == 'Low' %}rgba(16, 185, 129, 0.2){% elif risk_analysis.resource_risks.budget_overrun.risk_level == 'Medium' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                            {{ risk_analysis.resource_risks.budget_overrun.risk_level }} Risk
-                        </span>
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
-                        <div>
-                            <small style="color: var(--text-muted);">Overrun Probability</small>
-                            <div style="font-size: 1.2rem; font-weight: 600;">{{
-                                risk_analysis.resource_risks.budget_overrun.probability }}%</div>
-                        </div>
-                        <div>
-                            <small style="color: var(--text-muted);">Potential Overrun</small>
-                            <div style="font-size: 1.2rem; font-weight: 600;">₹{{
-                                "{:,}".format(risk_analysis.resource_risks.budget_overrun.potential_overrun) }}</div>
-                        </div>
-                    </div>
-                    <div
-                        style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; margin-bottom: 10px;">
-                        <strong style="color: var(--accent-green);">Mitigation Strategy:</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 14px;">{{
-                            risk_analysis.resource_risks.budget_overrun.mitigation }}</p>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px; color: var(--text-muted);">Additional Contingency:</span>
-                        <span style="font-size: 16px; font-weight: 600;">₹{{
-                            "{:,}".format(risk_analysis.resource_risks.budget_overrun.additional_contingency) }}</span>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- RISK TIMELINE -->
-        {% if risk_analysis.risk_timeline %}
-        <div class="card">
-            <h2>Risk Management Timeline</h2>
-
-            {% if risk_analysis.risk_timeline.pre_monsoon_actions %}
-            <div style="margin-bottom: 20px;">
-                <h3 style="color: var(--primary); margin-bottom: 10px;">Pre-Monsoon Actions</h3>
-                <ul style="margin: 0; padding-left: 20px;">
-                    {% for action in risk_analysis.risk_timeline.pre_monsoon_actions %}
-                    <li style="margin-bottom: 8px; color: var(--text-muted);">{{ action }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            {% if risk_analysis.risk_timeline.ongoing_monitoring %}
-            <div style="margin-bottom: 20px;">
-                <h3 style="color: var(--accent-orange); margin-bottom: 10px;">Ongoing Monitoring</h3>
-                <ul style="margin: 0; padding-left: 20px;">
-                    {% for item in risk_analysis.risk_timeline.ongoing_monitoring %}
-                    <li style="margin-bottom: 8px; color: var(--text-muted);">{{ item }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-
-        {% endif %}
-    </main>
-</body>
-
-</html>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

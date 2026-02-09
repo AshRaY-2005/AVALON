@@ -1,305 +1,165 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% set active_page = 'whatif' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVALON — What-If Simulator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+{% block title %}AVALON — What-If Simulator{% endblock %}
 
-<body>
-    <nav class="sidebar">
-        <div class="brand">
-            <span>AVALON</span>
+{% block content %}
+<div class="header">
+    <div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+            <a href="/" style="color: var(--text-muted); text-decoration: none; font-size: 14px;">Home</a>
+            <span style="color: var(--text-muted); font-size: 14px;">/</span>
+            <a href="/dashboard" style="color: var(--text-muted); text-decoration: none; font-size: 14px;">Dashboard</a>
+            <span style="color: var(--text-muted); font-size: 14px;">/</span>
+            <span style="color: var(--primary); font-size: 14px; font-weight: 600;">What-If Simulator</span>
         </div>
-        <a href="/" class="nav-item">New Project</a>
-        <a href="#" class="nav-item">Analysis Dashboard</a>
-        <a href="/whatif" class="nav-item active">What-If Simulator</a>
-        <a href="/risks" class="nav-item">Risk Analysis</a>
-    </nav>
+        <h1>What-If Simulator</h1>
+        <p style="color: var(--text-muted)">Analyze project outcomes with scenario modeling</p>
+    </div>
+    <div class="budget-badge">
+        <i class="fas fa-magic"></i> Scenario Planner
+    </div>
+</div>
 
-    <main class="main-content">
-        <header class="header">
-            <div>
-                <h1>What-If Simulator</h1>
-                <p style="color: var(--text-muted)">Analyze alternative scenarios with AI-powered predictions</p>
+{% if error %}
+<div class="card" style="border-color: var(--accent-red); background: #FFF5F5; margin-bottom: 20px;">
+    <div style="color: #C53030; font-weight: bold;">⚠️ {{ error }}</div>
+</div>
+{% endif %}
+
+{% if base_project %}
+<div class="dashboard-grid">
+    <!-- Input Panel -->
+    <div class="card">
+        <h2 style="color: #106263;"><i class="fas fa-sliders-h"></i> Simulation Parameters</h2>
+        <form action="/whatif" method="POST" class="simulator-form">
+            <div class="form-group">
+                <label>Duration Adjustment</label>
+                <select name="duration_change">
+                    <option value="none">Original ({{ base_project.duration_days }} days)</option>
+                    <option value="compress_10">Compress by 10% (~{{ (base_project.duration_days * 0.9)|int }} days)
+                    </option>
+                    <option value="compress_20">Compress by 20% (~{{ (base_project.duration_days * 0.8)|int }} days)
+                    </option>
+                    <option value="buffer_10">Add 10% Buffer (~{{ (base_project.duration_days * 1.1)|int }} days)
+                    </option>
+                </select>
             </div>
-        </header>
 
-        {% if error %}
-        <div class="card" style="border-color: var(--accent-red); background: rgba(239, 68, 68, 0.1);">
-            <div style="color: var(--accent-red); font-weight: bold;">⚠️ {{ error }}</div>
+            <div class="form-group">
+                <label>Budget Allocation</label>
+                <select name="budget_change">
+                    <option value="none">Original (₹{{ "{:,.0f}".format(base_project.total_cost) }})</option>
+                    <option value="increase_10">Increase by 10% (+₹{{ "{:,.0f}".format(base_project.total_cost *
+                        0.1) }})</option>
+                    <option value="increase_20">Increase by 20% (+₹{{ "{:,.0f}".format(base_project.total_cost *
+                        0.2) }})</option>
+                    <option value="decrease_10">Cut by 10% (-₹{{ "{:,.0f}".format(base_project.total_cost * 0.1) }})
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Quality & Resource Focus</label>
+                <select name="quality_focus">
+                    <option value="standard">Standard Execution</option>
+                    <option value="premium">Premium Quality (Higher Grade Materials)</option>
+                    <option value="speed">Max Speed (Double Shift + Added Machinery)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Simulation Goal</label>
+                <input type="text" name="custom_scenario" placeholder="e.g. Finish before Monsoon, Maximize ROI..."
+                    style="background: #F8F9FA;">
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                <i class="fas fa-play-circle"></i> Run AI Simulation
+            </button>
+        </form>
+    </div>
+
+    <!-- Result Overview -->
+    {% if scenario %}
+    <div class="card" style="border-left: 5px solid var(--primary);">
+        <h2 style="color: var(--primary);"><i class="fas fa-chart-line"></i> Simulated Outcome</h2>
+        <div class="stats-row" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+            <div style="background: #F0FBF9; padding: 15px; border-radius: 12px;">
+                <small style="color: #106263; font-weight: 700;">ESTIMATED COST</small>
+                <div class="card-value" style="font-size: 1.5rem;">₹{{ "{:,.0f}".format(scenario.new_total_cost) }}
+                </div>
+            </div>
+            <div style="background: #FFF9F0; padding: 15px; border-radius: 12px;">
+                <small style="color: #D97706; font-weight: 700;">ESTIMATED TIME</small>
+                <div class="card-value" style="font-size: 1.5rem;">{{ scenario.new_duration_days }} Days</div>
+            </div>
         </div>
-        {% endif %}
 
-        {% if base_project %}
-        <!-- BASE PROJECT SUMMARY -->
-        <div class="card">
-            <h2>Base Project</h2>
-            <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="stat-card">
-                    <small>LOCATION</small>
-                    <div class="card-value" style="font-size: 1rem;">{{ base_project.location }}</div>
-                </div>
-                <div class="stat-card">
-                    <small>DURATION</small>
-                    <div class="card-value" style="color: var(--primary)">{{ base_project.duration_days }} days</div>
-                </div>
-                <div class="stat-card">
-                    <small>TOTAL COST</small>
-                    <div class="card-value">₹{{ "{:,}".format(base_project.total_cost) }}</div>
-                </div>
-                <div class="stat-card">
-                    <small>WORKFORCE</small>
-                    <div class="card-value">{{ base_project.workforce_size }} workers</div>
-                </div>
+        <div class="ai-message" style="margin-top: 20px;">
+            <h3 style="font-size: 1rem; margin-bottom: 10px; color: #106263;">AI Scenario Intelligence</h3>
+            <p style="font-size: 0.95rem;">{{ scenario.explanation }}</p>
+            <div style="margin-top: 15px; font-weight: 700; color: var(--accent-purple);">
+                Feasibility Rank: {{ scenario.feasibility }}
             </div>
         </div>
+    </div>
+    {% else %}
+    <div class="card assistant-panel">
+        <h2 style="color: var(--accent-purple);"><i class="fas fa-info-circle"></i> Instructions</h2>
+        <p class="ai-message">Adjust the project parameters on the left to see how changes in timeline, budget, or
+            quality priority affect your project's outcome. The AI will calculate cost variances and risk profiles
+            for each scenario.</p>
+    </div>
+    {% endif %}
+</div>
 
-        <!-- SCENARIO SELECTION -->
-        {% if not scenario %}
-        <div class="card">
-            <h2>Select Scenario</h2>
-            <p style="color: var(--text-muted); margin-bottom: 20px;">
-                Choose a scenario to simulate and analyze the impact on cost, timeline, and resources.
-            </p>
-
-            <form method="POST" action="/whatif">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <!-- Scenario 1: Faster Completion -->
-                    <div style="border: 2px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.3s;"
-                        onclick="this.querySelector('input').checked = true; this.style.borderColor = 'var(--primary)';">
-                        <input type="radio" name="scenario" value="faster" id="scenario_faster" required
-                            style="margin-bottom: 10px;">
-                        <label for="scenario_faster" style="cursor: pointer; display: block;">
-                            <h3 style="color: var(--primary); margin: 0 0 10px 0;">Faster Completion</h3>
-                            <p style="color: var(--text-muted); margin: 0; font-size: 14px;">
-                                Complete project 20% faster by increasing workforce, adding machinery, and working
-                                overtime.
-                            </p>
-                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                    <span style="font-size: 13px; color: var(--text-muted);">Expected Time Saved:</span>
-                                    <span style="font-size: 13px; font-weight: 600; color: var(--primary);">~{{
-                                        (base_project.duration_days * 0.2)|int }} days</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="font-size: 13px; color: var(--text-muted);">Expected Cost
-                                        Impact:</span>
-                                    <span
-                                        style="font-size: 13px; font-weight: 600; color: var(--accent-red);">+10-20%</span>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-
-                    <!-- Scenario 2: Reduced Budget -->
-                    <div style="border: 2px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.3s;"
-                        onclick="this.querySelector('input').checked = true; this.style.borderColor = 'var(--primary)';">
-                        <input type="radio" name="scenario" value="budget_cut" id="scenario_budget" required
-                            style="margin-bottom: 10px;">
-                        <label for="scenario_budget" style="cursor: pointer; display: block;">
-                            <h3 style="color: var(--accent-orange); margin: 0 0 10px 0;">Reduced Budget</h3>
-                            <p style="color: var(--text-muted); margin: 0; font-size: 14px;">
-                                Reduce project budget by 10% through workforce optimization, material downgrade, and
-                                extended timeline.
-                            </p>
-                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                    <span style="font-size: 13px; color: var(--text-muted);">Expected Cost
-                                        Savings:</span>
-                                    <span style="font-size: 13px; font-weight: 600; color: var(--accent-green);">₹{{
-                                        "{:,}".format((base_project.total_cost * 0.1)|int) }}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="font-size: 13px; color: var(--text-muted);">Expected Time
-                                        Impact:</span>
-                                    <span
-                                        style="font-size: 13px; font-weight: 600; color: var(--accent-orange);">+10-15%</span>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px; display: flex; justify-content: center;">
-                    <button type="submit" class="btn-primary" style="width: 400px; font-size: 1.1rem;">
-                        Run AI Scenario Analysis
-                    </button>
-                </div>
-            </form>
-        </div>
-        {% endif %}
-
-        <!-- SCENARIO RESULTS -->
-        {% if scenario %}
-        <div class="card">
-            <h2>{{ scenario_name }}</h2>
-
-            <!-- Comparison Stats -->
-            <div class="stats-row" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 30px;">
-                <div class="stat-card" style="background: rgba(59, 130, 246, 0.1);">
-                    <small>DURATION</small>
-                    <div style="display: flex; align-items: baseline; gap: 10px;">
-                        <div class="card-value" style="color: var(--primary)">{{ scenario.new_duration_days }} days
-                        </div>
-                        {% if scenario_type == 'faster' %}
-                        <span style="color: var(--accent-green); font-size: 14px; font-weight: 600;">-{{
-                            scenario.get('time_saved_days', 0) }} days</span>
-                        {% else %}
-                        <span style="color: var(--accent-orange); font-size: 14px; font-weight: 600;">+{{
-                            scenario.get('delay_days', 0) }} days</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="stat-card" style="background: rgba(16, 185, 129, 0.1);">
-                    <small>TOTAL COST</small>
-                    <div style="display: flex; align-items: baseline; gap: 10px;">
-                        <div class="card-value">₹{{ "{:,}".format(scenario.new_total_cost) }}</div>
-                        {% if scenario_type == 'faster' %}
-                        <span style="color: var(--accent-red); font-size: 14px; font-weight: 600;">+{{
-                            scenario.get('cost_increase_percent', 0)|round(1) }}%</span>
-                        {% else %}
-                        <span style="color: var(--accent-green); font-size: 14px; font-weight: 600;">-10%</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="stat-card" style="background: rgba(139, 92, 246, 0.1);">
-                    <small>FEASIBILITY</small>
-                    <div class="card-value" style="font-size: 1.2rem; color: var(--primary)">{{
-                        scenario.get('feasibility', 'Unknown') }}</div>
-                </div>
+{% if scenario %}
+<div class="dashboard-grid" style="margin-top: 24px;">
+    <!-- Resource Impact -->
+    <div class="card">
+        <h2 style="color: var(--accent-orange);"><i class="fas fa-users-cog"></i> Resource Impact</h2>
+        {% if scenario.workforce_changes %}
+        <div style="background: #FFF9F0; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="font-size: 0.9rem;">Workforce Change:</span>
+                <span style="font-weight: 700; color: #D97706;">{{ scenario.workforce_changes.new_size }}
+                    workers</span>
             </div>
-
-            <!-- Workforce Changes -->
-            {% if scenario.workforce_changes %}
-            <div style="background: rgba(245, 158, 11, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 15px 0; color: var(--accent-orange);">Workforce Changes</h3>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                    <div>
-                        <small style="color: var(--text-muted);">Original Size</small>
-                        <div style="font-size: 1.5rem; font-weight: 600;">{{ scenario.workforce_changes.original_size }}
-                            workers</div>
-                    </div>
-                    <div>
-                        <small style="color: var(--text-muted);">New Size</small>
-                        <div style="font-size: 1.5rem; font-weight: 600;">{{ scenario.workforce_changes.new_size }}
-                            workers
-                            {% if scenario_type == 'faster' %}
-                            <span style="color: var(--accent-green); font-size: 1rem;">(+{{
-                                scenario.workforce_changes.get('increase_percent', 0)|round(0)|int }}%)</span>
-                            {% else %}
-                            <span style="color: var(--accent-red); font-size: 1rem;">(-{{
-                                scenario.workforce_changes.get('reduction_percent', 0)|round(0)|int }}%)</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Cost Breakdown (Faster Scenario) -->
-            {% if scenario_type == 'faster' and scenario.cost_breakdown %}
-            <div style="margin-bottom: 20px;">
-                <h3 style="margin: 0 0 15px 0;">Cost Increase Breakdown</h3>
-                <div style="display: grid; gap: 10px;">
-                    <div
-                        style="display: flex; justify-content: space-between; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 6px;">
-                        <span>Overtime Costs</span>
-                        <span style="font-weight: 600;">₹{{ "{:,}".format(scenario.cost_breakdown.overtime_cost)
-                            }}</span>
-                    </div>
-                    <div
-                        style="display: flex; justify-content: space-between; padding: 10px; background: rgba(236, 72, 153, 0.1); border-radius: 6px;">
-                        <span>Additional Machinery</span>
-                        <span style="font-weight: 600;">₹{{
-                            "{:,}".format(scenario.cost_breakdown.additional_machinery_cost) }}</span>
-                    </div>
-                    <div
-                        style="display: flex; justify-content: space-between; padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 6px;">
-                        <span>Material Wastage</span>
-                        <span style="font-weight: 600;">₹{{ "{:,}".format(scenario.cost_breakdown.material_wastage_cost)
-                            }}</span>
-                    </div>
-                    <div
-                        style="display: flex; justify-content: space-between; padding: 10px; background: rgba(99, 102, 241, 0.1); border-radius: 6px;">
-                        <span>Coordination Overhead</span>
-                        <span style="font-weight: 600;">₹{{ "{:,}".format(scenario.cost_breakdown.coordination_overhead)
-                            }}</span>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Resource Strain (Faster Scenario) -->
-            {% if scenario_type == 'faster' and scenario.resource_strain %}
-            <div style="background: rgba(239, 68, 68, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 15px 0; color: var(--accent-red);">Resource Strain Analysis</h3>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <small style="color: var(--text-muted);">Worker Fatigue</small>
-                        <div style="font-size: 1.5rem; font-weight: 600;">{{
-                            scenario.resource_strain.worker_fatigue_score }}/10</div>
-                    </div>
-                    <div>
-                        <small style="color: var(--text-muted);">Equipment Utilization</small>
-                        <div style="font-size: 1.5rem; font-weight: 600;">{{
-                            scenario.resource_strain.equipment_utilization_score }}/10</div>
-                    </div>
-                    <div>
-                        <small style="color: var(--text-muted);">Overall Stress</small>
-                        <div style="font-size: 1.5rem; font-weight: 600;">{{
-                            scenario.resource_strain.overall_stress_score }}/10</div>
-                    </div>
-                </div>
-                <p style="margin: 0; color: var(--text-muted); font-size: 14px;">{{ scenario.resource_strain.explanation
-                    }}</p>
-            </div>
-            {% endif %}
-
-            <!-- Risks -->
-            {% if scenario.risks %}
-            <div style="margin-bottom: 20px;">
-                <h3 style="margin: 0 0 15px 0;">Risk Assessment</h3>
-                <div style="display: grid; gap: 10px;">
-                    {% for risk in scenario.risks %}
-                    <div
-                        style="padding: 15px; background: rgba(239, 68, 68, 0.05); border-left: 4px solid var(--accent-red); border-radius: 6px;">
-                        <p style="margin: 0; font-size: 14px;">{{ risk }}</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Recommendations -->
-            {% if scenario.recommendations %}
-            <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 8px;">
-                <h3 style="margin: 0 0 15px 0; color: var(--accent-green);">AI Recommendations</h3>
-                <ul style="margin: 0; padding-left: 20px;">
-                    {% for rec in scenario.recommendations %}
-                    <li style="margin-bottom: 8px; color: var(--text-muted);">{{ rec }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <!-- Action Buttons -->
-            <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
-                <a href="/whatif" class="btn-primary" style="text-decoration: none; padding: 12px 30px;">
-                    Try Another Scenario
-                </a>
-                <a href="/" class="btn-primary"
-                    style="text-decoration: none; padding: 12px 30px; background: var(--border); color: var(--text);">
-                    New Project
-                </a>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                (Original: {{ scenario.workforce_changes.original_size }})
             </div>
         </div>
         {% endif %}
-        {% endif %}
-    </main>
-</body>
 
-</html>
+        {% if scenario.resource_strain %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="background: #F8F9FA; padding: 10px; border-radius: 8px; text-align: center;">
+                <small style="display: block; font-size: 0.7rem; color: var(--text-muted);">FATIGUE SCORE</small>
+                <strong style="color: #C53030;">{{ scenario.resource_strain.worker_fatigue_score }}/10</strong>
+            </div>
+            <div style="background: #F8F9FA; padding: 10px; border-radius: 8px; text-align: center;">
+                <small style="display: block; font-size: 0.7rem; color: var(--text-muted);">STRESS SCORE</small>
+                <strong style="color: #C53030;">{{ scenario.resource_strain.overall_stress_score }}/10</strong>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card">
+        <h2 style="color: var(--accent-purple);"><i class="fas fa-lightbulb"></i> Recommendations</h2>
+        <ul style="list-style: none; padding: 0;">
+            {% for rec in scenario.recommendations %}
+            <li
+                style="background: #F8F9FA; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem; border-left: 3px solid var(--accent-purple);">
+                {{ rec }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+</div>
+{% endblock %}
